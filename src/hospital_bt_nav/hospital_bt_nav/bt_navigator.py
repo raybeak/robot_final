@@ -23,6 +23,9 @@ class BTNode(Node):
         # RViz에서 찍는 목표(/goal_pose)를 가로채서 듣기
         self.create_subscription(PoseStamped, '/goal_pose', self.goal_callback, 10)
 
+        #tts_publisher 생성
+        self.tts_publisher = self.create_publisher(String, 'tts_topic', 10)
+
     def goal_callback(self, msg):
         self.get_logger().info(f"📍 새로운 목표 수신: x={msg.pose.position.x:.2f}, y={msg.pose.position.y:.2f}")
         self.current_goal_msg = msg
@@ -157,6 +160,7 @@ class Nav2DynamicGoal(py_trees.behaviour.Behaviour):
         status = future.result().status
         if status == GoalStatus.STATUS_SUCCEEDED:
             self.node.get_logger().info('🎉 도착 완료!')
+            self.tts_publisher.publish("도착 완료")
             self.node.current_goal_msg = None # 목표 달성했으므로 초기화
             self.sent_goal = False
 
@@ -164,6 +168,7 @@ class Nav2DynamicGoal(py_trees.behaviour.Behaviour):
         # 장애물이 나타나서 이 노드가 취소될 때 (INVALID 상태로 변경됨)
         if new_status == py_trees.common.Status.INVALID and self.goal_handle:
             self.node.get_logger().info("⚠️ 장애물 회피를 위해 Nav2 일시 중지 (Cancel)")
+            self.tts_publisher.publish("일시 정지")
             self.goal_handle.cancel_goal_async()
             self.sent_goal = False # 이렇게 해야 장애물이 사라지면 다시 목표를 보냄
 
